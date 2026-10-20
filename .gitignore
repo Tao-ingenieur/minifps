@@ -7,3 +7,9 @@ dist/
 *.exe
 *.log
 minifps-local/
+
+# Player saves are private local data.
+autosave.json*
+quicksave.json*
+MiniFPS-save*.json*
+saves/
