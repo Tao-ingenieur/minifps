@@ -1,10 +1,10 @@
-# MiniFPS Woodland v0.5.0
+# MiniFPS Woodland v0.5.1
 
 一个极简 Windows 第一人称林间猎鸟靶场，使用 Python + Ursina。可辨认的多部件 3D 猎枪包含木质枪托、金属枪管、瞄准镜和持枪手；鸟有头、喙、眼睛、双翼、脚与尾羽，栖息在林间木桩上。每局有 8 只静态鸟，朝向随机；场景与栖息位置固定，确保跨次启动读档时布局一致。
 
 WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点击 START 或按 Enter 开始一局 120 秒挑战。击中全部 8 只鸟或用时结束后显示 Game Over、逐项得分和总分，可按 R / Enter 或点击 PLAY AGAIN 重新开始。ESC 暂停或继续并释放鼠标，不再直接退出；退出请使用菜单 SAVE & EXIT。
 
-当前版本 **v0.5.0**。每个版本的具体改动见 [更新日志](CHANGELOG.md)，可下载历史源码或查看 [GitHub Releases](https://github.com/Tao-ingenieur/minifps/releases)。前两版已根据原始提交补记历史记录。
+当前版本 **v0.5.1**。每个版本的具体改动见 [更新日志](CHANGELOG.md)，可下载历史源码或查看 [GitHub Releases](https://github.com/Tao-ingenieur/minifps/releases)。前两版已根据原始提交补记历史记录。
 
 ![游戏实机画面](docs/preview.png)
 ![暂停与存档菜单](docs/pause.png)
@@ -14,10 +14,10 @@ WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点
 ## 全屏、鼠标与 About
 
 - **F11 / Alt+Enter** 或菜单中的 FULLSCREEN / WINDOWED 切换全屏与普通窗口。切换时暂停，按 ESC / Enter 继续；返回窗口会恢复原来的尺寸和位置。
-- **窗口模式默认自由鼠标**，可直接移出游戏去操作其他程序。按住右键时临时捕获鼠标、控制视角并放大瞄准；松开右键立即释放。左键沿屏幕中心准星射击。鼠标离开窗口或窗口失焦时自动暂停。
+- **窗口模式默认自由鼠标**，可直接移出游戏去操作其他程序。按住右键时临时捕获鼠标、控制视角并放大瞄准；松开右键立即释放。左键沿屏幕中心准星射击。鼠标移出窗口不会打断移动；实际切换到其他程序、游戏失焦时才自动暂停。
 - **全屏模式**在游玩时自动捕获鼠标，直接移动鼠标控制视角；ESC / P 暂停后立即释放鼠标，Alt+Tab 失焦也会自动暂停。
 - **ESC 不退出游戏**：游玩时暂停，暂停时继续；About/历史页返回菜单，确认页取消；首页或结算页也不会退出。退出请点击 SAVE & EXIT 并确认，或关闭窗口。
-- **ABOUT / F1** 显示当前版本号 **v0.5.0**、操作说明、技术栈及项目地址。标题栏和游戏 HUD 同样显示版本号。
+- **ABOUT / F1** 显示当前版本号 **v0.5.1**、操作说明、技术栈及项目地址。标题栏和游戏 HUD 同样显示版本号。
 - 存档格式保持 1，之前 v0.4.0 的进度与玩家纪录可以继续读取。
 
 ## 存盘、继续与玩家成绩
@@ -31,20 +31,23 @@ WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点
 | 快速读档 | F9 / QUICK LOAD；有当前进度时先确认 |
 | 导出便携存档 | F6 / EXPORT JSON，选择保存位置 |
 | 导入便携存档 | F7 / IMPORT JSON，选择之前导出的 JSON |
+| 找回目标视角 | Home / FACE BIRDS，朝向最近的剩余小鸟，不改变分数与位置 |
 | 重开本局 | R / NEW ROUND；局中先确认，不清除最高分 |
 | 看历史与成就 | 暂停或结算菜单的 HISTORY |
 | 控制视角 / 放大瞄准 | 窗口模式按住右键；全屏直接移动鼠标，右键放大 |
 | 保存并退出 | 菜单 SAVE & EXIT 并确认；关闭窗口也触发保存 |
 
-存档包含剩余目标、玩家位置与视角、当前分数所需的命中/发数与连击、已用时间和射击冷却。读档后停在暂停页，继续前不消耗时间。暂停、离线及文件选择器打开期间都不计时；切出窗口也会自动暂停。
+存档包含剩余目标、玩家位置与视角、当前分数所需的命中/发数与连击、已用时间和射击冷却。F9 / 导入读档后停在暂停页，继续前不消耗时间；首页 CONTINUE 会直接继续。暂停、离线及文件选择器打开期间都不计时；切出窗口也会自动暂停。
 
-游戏会在每次有效射击后、每 10 秒、暂停、结算和正常退出时保存到 `autosave.json`。下次启动可用 CONTINUE 恢复。F5 保存的是独立的 `quicksave.json` 检查点，之后的新局与自动保存不会覆盖它。F6 导出的是可复制到其他电脑的独立 JSON 文件，F7 导入后合并本机档案。
+游戏会在每次有效射击后、每 10 秒、暂停、结算和正常退出时保存到 `autosave.json`。下次启动点击 CONTINUE 会恢复并直接继续游玩，不需要再次按继续。F5 保存的是独立的 `quicksave.json` 检查点，之后的新局与自动保存不会覆盖它。F6 导出的是可复制到其他电脑的独立 JSON 文件，F7 导入后合并本机档案。
 
 **当前分**是本局实时分数，可为负；**最高分**是已完成清场或超时局的最高结算分；**上一局分数**是最近完成局的结算分。新局清零当前分，最高分和历史成绩继续保留。导入旧备份不会降低本机最高分、最快清场或成就。最近 20 局记录包括得分、用时、命中率和清场/超时状态；同一局重复导入不会重复累计局数，重新挑战旧检查点取得更好结果可以提高最高分。
 
 额外成就包括：首次清场、8 发全中、30 秒内清场、结算达到 1800 分。成就记录在本地档案中，结算页显示本次新解锁项目。
 
 存档采用 JSON 校验与原子写入，并保留上一版 `.bak` 备份；自动/快速存档损坏时尝试恢复备份。原损坏文件在被替换前保留 `.corrupt-*` 副本。写入失败会显示提示，保存失败退出时需要再次确认；无效导入不会覆盖当前局。存档仅用于本地离线游戏，不作为线上竞技成绩认证。
+
+如果看不到目标，可按 **Home** 快速转向最近的小鸟，无需重开或放弃当前分数。v0.5.1 修正了自由鼠标导致的误暂停；若菜单显示 PAUSED，ESC / Enter 可继续。
 
 ## 积分规则
 
@@ -128,7 +131,7 @@ from ursina.models.procedural.cone import Cone
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 SAVE_FORMAT = 1
 RULESET = 'woodland-scoring-1'
 SLOTS = [(-6, 2, 3), (-3, 2.6, 8), (2, 2.2, 4), (6, 3, 11),
@@ -541,7 +544,8 @@ def choose_save_file(save=False):
 
 
 def main():
-    smoke_test = '--smoke-test' in sys.argv
+    movement_test = '--movement-smoke-test' in sys.argv
+    smoke_test = '--smoke-test' in sys.argv or movement_test
     app = Ursina(title=f'MiniFPS | Woodland v{VERSION}', borderless=False, fullscreen=False,
                  size=(1280, 720), development_mode=False)
     # 统一交给游戏处理 F11，避免引擎调试快捷键和自定义逻辑各切换一次。
@@ -739,7 +743,7 @@ def main():
                       ((0, -.009), (.0015, .009)), ((0, .009), (.0015, .009))]:
         Entity(parent=reticle, model='quad', position=pos, scale=size,
                color=color.rgba32(245, 242, 219, 215))
-    Text('WASD MOVE / HOLD RMB LOOK / LMB FIRE / ESC PAUSE / F11 FULLSCREEN',
+    Text('WASD MOVE / HOLD RMB LOOK / HOME FACE BIRDS / ESC PAUSE / F11 FULLSCREEN',
          parent=hud, position=(-.85, -.46), scale=.72, color=tint(242, 239, 220))
     toast = Text(parent=camera.ui, origin=(0, 0), position=(.3, .45), z=-.4,
                  scale=.8, color=tint(242, 225, 170), enabled=False)
@@ -767,9 +771,10 @@ def main():
     display_button = button('FULLSCREEN / F11', 0, -.275)
     about_button = button('ABOUT / F1', .40, -.275)
     exit_button = button('SAVE & EXIT', 0, -.35)
+    face_button = button('FACE BIRDS / HOME', -.40, -.35)
     back_button = button('BACK / ESC', .40, -.35)
     buttons = [primary, restart_button, history_button, save_button, load_button,
-               export_button, import_button, display_button, about_button, exit_button, back_button]
+               export_button, import_button, display_button, about_button, exit_button, face_button, back_button]
     game = GameRound()
     recoil = sway_time = 0
     notice = initial_notice
@@ -898,7 +903,7 @@ def main():
                             f'Save format {SAVE_FORMAT}; local saves remain compatible with v0.4.0.\n\n'
                             'F11 / Alt+Enter: fullscreen or windowed.\n'
                             'Windowed: hold RMB to look; release to free the cursor.\n'
-                            'ESC / P: pause or resume. F5 save; F9 load.\n'
+                            'ESC / P: pause; HOME: face birds. F5 save; F9 load.\n'
                             'Source: github.com/Tao-ingenieur/minifps')
         elif mode == 'history':
             primary.text = 'BACK TO MENU'
@@ -1037,7 +1042,9 @@ def main():
             resume_round()
         elif game.state == 'ready' and saved_session:
             restore_session(saved_session)
-            notify('Save restored. Press P or ENTER to resume.')
+            # 点击 CONTINUE 已经表达继续意图，不再要求多按一次才能移动。
+            resume_round()
+            notify('Save continued. WASD moves; HOME faces a remaining bird.')
         elif game.state != 'playing':
             start_round()
 
@@ -1142,6 +1149,20 @@ def main():
         mouse.visible = True
         application.quit()
 
+    def face_birds():
+        if game.state not in ('playing', 'paused') or not birds:
+            notify('Start or continue a round first. HOME faces a remaining bird.')
+            return
+        target = min(birds, key=lambda bird: (bird.world_position - camera.world_position).length())
+        direction = target.world_position - camera.world_position
+        player.rotation_y = math.degrees(math.atan2(direction.x, direction.z))
+        horizontal = math.hypot(direction.x, direction.z)
+        player.camera_pivot.rotation_x = max(-70, min(70, -math.degrees(math.atan2(direction.y, horizontal))))
+        mouse.velocity = Vec3(0, 0, 0)
+        if game.state == 'paused':
+            resume_round()
+        notify('Facing a remaining bird. Hold RMB to look around.')
+
     restart_button.on_click = request_restart
     history_button.on_click = lambda: (pause_round(), show_menu('history'))
     save_button.on_click = save_quick
@@ -1152,6 +1173,7 @@ def main():
         'Save progress and close MiniFPS? You can continue next time.', exit_game)
     display_button.on_click = toggle_fullscreen
     about_button.on_click = lambda: (pause_round(), show_menu('about'))
+    face_button.on_click = face_birds
 
     def shoot(now=None):
         nonlocal recoil
@@ -1204,6 +1226,8 @@ def main():
                 show_menu()  # ESC 在首页或结算页也不退出。
         elif key == 'r':
             request_restart()
+        elif key == 'home':
+            face_birds()
         elif key == 'enter' and game.state != 'playing':
             primary_action()
         elif key == 'f5':
@@ -1235,10 +1259,11 @@ def main():
         if game.state == 'timeout':
             finish_round()
             return
-        if not smoke_test and (not app.win.getProperties().getForeground() or
-                               (not window.fullscreen and not looking and mouse.is_outside)):
+        # 自由鼠标模式下 has_mouse() 可在窗口仍有焦点时返回 False。
+        # 只以真实失焦暂停；鼠标移出不能把正常的 WASD 输入停掉。
+        if not smoke_test and not app.win.getProperties().getForeground():
             pause_round()
-            notify('Cursor left the window or focus lost. Paused; cursor released.')
+            notify('Window lost focus. Paused; cursor released.')
             return
         sync_pointer()
         if now >= next_autosave:
@@ -1335,6 +1360,12 @@ def main():
                 snapshot = store.read(store.quick)
                 assert snapshot['session']['round']['hits'] == 1
                 assert len(snapshot['session']['birds']) == 7
+                game = GameRound()
+                saved_session = snapshot['session']
+                show_menu()
+                primary_action()
+                assert game.state == 'playing' and not player.ignore and not menu.enabled
+                assert game.score == 100 and len(birds) == 7
                 saved_score = game.score
                 request_restart()
                 assert menu_mode == 'confirm' and game.state == 'paused'
@@ -1394,7 +1425,87 @@ def main():
                 traceback.print_exc()
                 sys.exit(1)
             application.quit()
-        invoke(verify, delay=1)
+        def movement_verify():
+            from panda3d.core import Point2
+            # 不直接调用 player.update：让真正的引擎帧循环消费 raw WASD 输入。
+            cases = [('w', 2, 1), ('s', 2, -1), ('a', 0, -1), ('d', 0, 1)]
+            modes = [False, True] if '--display-smoke-test' in sys.argv and window.main_monitor else [False]
+            origin = Vec3(0, 0, -10)
+
+            def later(callback, delay=.35):
+                def run(task):
+                    try:
+                        callback()
+                    except Exception:
+                        import traceback
+                        traceback.print_exc()
+                        sys.exit(1)
+                    return task.done
+                app.taskMgr.doMethodLater(delay, run, 'movement-check-' + uuid.uuid4().hex)
+
+            def visible_birds():
+                count = 0
+                for bird in birds:
+                    projected = Point2()
+                    point = app.cam.getRelativePoint(scene, bird.world_position)
+                    if camera.lens.project(point, projected) and abs(projected.x) <= 1 and abs(projected.y) <= 1:
+                        count += 1
+                return count
+
+            def enter_case(mode_index, index):
+                if index == 4:
+                    if mode_index + 1 < len(modes):
+                        enter_mode(mode_index + 1)
+                    else:
+                        finish()
+                    return
+                player.position = origin
+                player.rotation = player.camera_pivot.rotation = (0, 0, 0)
+                mouse.velocity = Vec3(0, 0, 0)
+                key, axis, sign = cases[index]
+                app.input(key, is_raw=True)
+                def measure():
+                    app.input_up(key, is_raw=True)
+                    delta = player.position[axis] - origin[axis]
+                    assert game.state == 'playing' and not player.ignore, 'Movement unexpectedly paused'
+                    assert delta * sign > .25, f'{key.upper()} failed to move: delta={delta}'
+                    assert len(birds) == 8 and visible_birds() >= 5, 'Birds disappeared from the field'
+                    print(f'MOVEMENT PASS {"fullscreen" if modes[mode_index] else "windowed"} '
+                          f'{key.upper()}: {delta:.3f}, visible birds={visible_birds()}', flush=True)
+                    enter_case(mode_index, index + 1)
+                later(measure)
+
+            def enter_mode(mode_index):
+                if window.fullscreen != modes[mode_index]:
+                    toggle_fullscreen()
+                start_round()
+                later(lambda: enter_case(mode_index, 0), .2)
+
+            def finish():
+                if window.fullscreen:
+                    toggle_fullscreen()
+                start_round()
+                assert visible_birds() == 8, 'Fresh round must show all 8 birds'
+                if '--screenshot' in sys.argv:
+                    screenshot(sys.argv[sys.argv.index('--screenshot') + 1])
+                # 模拟旧存档朝向天空或背后：Home 必须能找回真实目标，且不清分。
+                saved_score, saved_id = game.score, game.round_id
+                player.rotation_y = 180
+                player.camera_pivot.rotation_x = 80
+                handle_input('home')
+                assert visible_birds() >= 1 and game.score == saved_score and game.round_id == saved_id
+                assert not mouse.locked and mouse.visible
+                handle_input('escape')
+                assert game.state == 'paused' and player.ignore
+                handle_input('escape')
+                assert game.state == 'playing' and not player.ignore
+                print('MOVEMENT SMOKE PASSED: real-frame WASD, 8 visible birds, Home and ESC', flush=True)
+                application.quit()
+
+            enter_mode(0)
+
+        invoke(movement_verify if movement_test else verify, delay=1)
+
     app.run()
 
 
@@ -1455,3 +1566,11 @@ Git 仓库根目录为 `minifps`，同级 `minifps-local` 不在版本控制范�
 ```
 
 后续每次发布需要更新版本号、更新日志、README、版本标签与 GitHub Release；详细步骤见 [CONTRIBUTING.md](CONTRIBUTING.md)。exe 和构建环境继续只保留在本地目录。
+
+移动与鸟形目标显示回归测试（真实引擎帧循环，不使用玩家档案）：
+
+```powershell
+& ..\minifps-local\.venv\Scripts\python.exe src\minifps.py --movement-smoke-test --display-smoke-test
+```
+
+该测试在窗口与全屏模式分别持续按下 W/S/A/D，并验证位移和目标可见性。测试窗口出现后会自动关闭。

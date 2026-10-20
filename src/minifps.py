@@ -22,7 +22,7 @@ from ursina.models.procedural.cone import Cone
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 SAVE_FORMAT = 1
 RULESET = 'woodland-scoring-1'
 SLOTS = [(-6, 2, 3), (-3, 2.6, 8), (2, 2.2, 4), (6, 3, 11),
@@ -435,7 +435,8 @@ def choose_save_file(save=False):
 
 
 def main():
-    smoke_test = '--smoke-test' in sys.argv
+    movement_test = '--movement-smoke-test' in sys.argv
+    smoke_test = '--smoke-test' in sys.argv or movement_test
     app = Ursina(title=f'MiniFPS | Woodland v{VERSION}', borderless=False, fullscreen=False,
                  size=(1280, 720), development_mode=False)
     # 统一交给游戏处理 F11，避免引擎调试快捷键和自定义逻辑各切换一次。
@@ -633,7 +634,7 @@ def main():
                       ((0, -.009), (.0015, .009)), ((0, .009), (.0015, .009))]:
         Entity(parent=reticle, model='quad', position=pos, scale=size,
                color=color.rgba32(245, 242, 219, 215))
-    Text('WASD MOVE / HOLD RMB LOOK / LMB FIRE / ESC PAUSE / F11 FULLSCREEN',
+    Text('WASD MOVE / HOLD RMB LOOK / HOME FACE BIRDS / ESC PAUSE / F11 FULLSCREEN',
          parent=hud, position=(-.85, -.46), scale=.72, color=tint(242, 239, 220))
     toast = Text(parent=camera.ui, origin=(0, 0), position=(.3, .45), z=-.4,
                  scale=.8, color=tint(242, 225, 170), enabled=False)
@@ -661,9 +662,10 @@ def main():
     display_button = button('FULLSCREEN / F11', 0, -.275)
     about_button = button('ABOUT / F1', .40, -.275)
     exit_button = button('SAVE & EXIT', 0, -.35)
+    face_button = button('FACE BIRDS / HOME', -.40, -.35)
     back_button = button('BACK / ESC', .40, -.35)
     buttons = [primary, restart_button, history_button, save_button, load_button,
-               export_button, import_button, display_button, about_button, exit_button, back_button]
+               export_button, import_button, display_button, about_button, exit_button, face_button, back_button]
     game = GameRound()
     recoil = sway_time = 0
     notice = initial_notice
@@ -792,7 +794,7 @@ def main():
                             f'Save format {SAVE_FORMAT}; local saves remain compatible with v0.4.0.\n\n'
                             'F11 / Alt+Enter: fullscreen or windowed.\n'
                             'Windowed: hold RMB to look; release to free the cursor.\n'
-                            'ESC / P: pause or resume. F5 save; F9 load.\n'
+                            'ESC / P: pause; HOME: face birds. F5 save; F9 load.\n'
                             'Source: github.com/Tao-ingenieur/minifps')
         elif mode == 'history':
             primary.text = 'BACK TO MENU'
@@ -931,7 +933,9 @@ def main():
             resume_round()
         elif game.state == 'ready' and saved_session:
             restore_session(saved_session)
-            notify('Save restored. Press P or ENTER to resume.')
+            # 点击 CONTINUE 已经表达继续意图，不再要求多按一次才能移动。
+            resume_round()
+            notify('Save continued. WASD moves; HOME faces a remaining bird.')
         elif game.state != 'playing':
             start_round()
 
@@ -1036,6 +1040,20 @@ def main():
         mouse.visible = True
         application.quit()
 
+    def face_birds():
+        if game.state not in ('playing', 'paused') or not birds:
+            notify('Start or continue a round first. HOME faces a remaining bird.')
+            return
+        target = min(birds, key=lambda bird: (bird.world_position - camera.world_position).length())
+        direction = target.world_position - camera.world_position
+        player.rotation_y = math.degrees(math.atan2(direction.x, direction.z))
+        horizontal = math.hypot(direction.x, direction.z)
+        player.camera_pivot.rotation_x = max(-70, min(70, -math.degrees(math.atan2(direction.y, horizontal))))
+        mouse.velocity = Vec3(0, 0, 0)
+        if game.state == 'paused':
+            resume_round()
+        notify('Facing a remaining bird. Hold RMB to look around.')
+
     restart_button.on_click = request_restart
     history_button.on_click = lambda: (pause_round(), show_menu('history'))
     save_button.on_click = save_quick
@@ -1046,6 +1064,7 @@ def main():
         'Save progress and close MiniFPS? You can continue next time.', exit_game)
     display_button.on_click = toggle_fullscreen
     about_button.on_click = lambda: (pause_round(), show_menu('about'))
+    face_button.on_click = face_birds
 
     def shoot(now=None):
         nonlocal recoil
@@ -1098,6 +1117,8 @@ def main():
                 show_menu()  # ESC 在首页或结算页也不退出。
         elif key == 'r':
             request_restart()
+        elif key == 'home':
+            face_birds()
         elif key == 'enter' and game.state != 'playing':
             primary_action()
         elif key == 'f5':
@@ -1129,10 +1150,11 @@ def main():
         if game.state == 'timeout':
             finish_round()
             return
-        if not smoke_test and (not app.win.getProperties().getForeground() or
-                               (not window.fullscreen and not looking and mouse.is_outside)):
+        # 自由鼠标模式下 has_mouse() 可在窗口仍有焦点时返回 False。
+        # 只以真实失焦暂停；鼠标移出不能把正常的 WASD 输入停掉。
+        if not smoke_test and not app.win.getProperties().getForeground():
             pause_round()
-            notify('Cursor left the window or focus lost. Paused; cursor released.')
+            notify('Window lost focus. Paused; cursor released.')
             return
         sync_pointer()
         if now >= next_autosave:
@@ -1229,6 +1251,12 @@ def main():
                 snapshot = store.read(store.quick)
                 assert snapshot['session']['round']['hits'] == 1
                 assert len(snapshot['session']['birds']) == 7
+                game = GameRound()
+                saved_session = snapshot['session']
+                show_menu()
+                primary_action()
+                assert game.state == 'playing' and not player.ignore and not menu.enabled
+                assert game.score == 100 and len(birds) == 7
                 saved_score = game.score
                 request_restart()
                 assert menu_mode == 'confirm' and game.state == 'paused'
@@ -1288,7 +1316,87 @@ def main():
                 traceback.print_exc()
                 sys.exit(1)
             application.quit()
-        invoke(verify, delay=1)
+        def movement_verify():
+            from panda3d.core import Point2
+            # 不直接调用 player.update：让真正的引擎帧循环消费 raw WASD 输入。
+            cases = [('w', 2, 1), ('s', 2, -1), ('a', 0, -1), ('d', 0, 1)]
+            modes = [False, True] if '--display-smoke-test' in sys.argv and window.main_monitor else [False]
+            origin = Vec3(0, 0, -10)
+
+            def later(callback, delay=.35):
+                def run(task):
+                    try:
+                        callback()
+                    except Exception:
+                        import traceback
+                        traceback.print_exc()
+                        sys.exit(1)
+                    return task.done
+                app.taskMgr.doMethodLater(delay, run, 'movement-check-' + uuid.uuid4().hex)
+
+            def visible_birds():
+                count = 0
+                for bird in birds:
+                    projected = Point2()
+                    point = app.cam.getRelativePoint(scene, bird.world_position)
+                    if camera.lens.project(point, projected) and abs(projected.x) <= 1 and abs(projected.y) <= 1:
+                        count += 1
+                return count
+
+            def enter_case(mode_index, index):
+                if index == 4:
+                    if mode_index + 1 < len(modes):
+                        enter_mode(mode_index + 1)
+                    else:
+                        finish()
+                    return
+                player.position = origin
+                player.rotation = player.camera_pivot.rotation = (0, 0, 0)
+                mouse.velocity = Vec3(0, 0, 0)
+                key, axis, sign = cases[index]
+                app.input(key, is_raw=True)
+                def measure():
+                    app.input_up(key, is_raw=True)
+                    delta = player.position[axis] - origin[axis]
+                    assert game.state == 'playing' and not player.ignore, 'Movement unexpectedly paused'
+                    assert delta * sign > .25, f'{key.upper()} failed to move: delta={delta}'
+                    assert len(birds) == 8 and visible_birds() >= 5, 'Birds disappeared from the field'
+                    print(f'MOVEMENT PASS {"fullscreen" if modes[mode_index] else "windowed"} '
+                          f'{key.upper()}: {delta:.3f}, visible birds={visible_birds()}', flush=True)
+                    enter_case(mode_index, index + 1)
+                later(measure)
+
+            def enter_mode(mode_index):
+                if window.fullscreen != modes[mode_index]:
+                    toggle_fullscreen()
+                start_round()
+                later(lambda: enter_case(mode_index, 0), .2)
+
+            def finish():
+                if window.fullscreen:
+                    toggle_fullscreen()
+                start_round()
+                assert visible_birds() == 8, 'Fresh round must show all 8 birds'
+                if '--screenshot' in sys.argv:
+                    screenshot(sys.argv[sys.argv.index('--screenshot') + 1])
+                # 模拟旧存档朝向天空或背后：Home 必须能找回真实目标，且不清分。
+                saved_score, saved_id = game.score, game.round_id
+                player.rotation_y = 180
+                player.camera_pivot.rotation_x = 80
+                handle_input('home')
+                assert visible_birds() >= 1 and game.score == saved_score and game.round_id == saved_id
+                assert not mouse.locked and mouse.visible
+                handle_input('escape')
+                assert game.state == 'paused' and player.ignore
+                handle_input('escape')
+                assert game.state == 'playing' and not player.ignore
+                print('MOVEMENT SMOKE PASSED: real-frame WASD, 8 visible birds, Home and ESC', flush=True)
+                application.quit()
+
+            enter_mode(0)
+
+        invoke(movement_verify if movement_test else verify, delay=1)
+
     app.run()
 
 

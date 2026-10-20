@@ -21,3 +21,5 @@
 存档或档案功能的变更必须通过 `tests/test_persistence.py`。保持旧版本格式兼容，或显式提高格式版本并提供清晰报错；不能静默清空最高分。自检应使用独立测试目录，不可读写真实玩家数据。
 
 显示与输入变更须验证 ESC 不会退出、窗口模式能释放鼠标、About 版本号正确，执行 `--smoke-test --display-smoke-test` 检查 F11 / Alt+Enter 和窗口尺寸恢复。
+
+移动或视角变更还须运行 `--movement-smoke-test --display-smoke-test`，通过真实引擎帧与 raw WASD 输入验证四方向移动及目标可见性，不能仅以菜单/状态自检代替游玩循环验证。
