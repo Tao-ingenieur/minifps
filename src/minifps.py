@@ -3,9 +3,11 @@ import math
 import random
 import sys
 from copy import deepcopy
+from dataclasses import dataclass
+from time import perf_counter
 from ursina import (
-    AmbientLight, DirectionalLight, Entity, Sky, Text, Ursina, Vec3,
-    application, camera, color, destroy, invoke, mouse, raycast, scene, time, window,
+    AmbientLight, Button, DirectionalLight, Entity, Sky, Text, Ursina, Vec3,
+    application, camera, color, destroy, held_keys, invoke, mouse, raycast, scene, time, window,
 )
 from ursina.collider import BoxCollider
 from ursina.models.procedural.cylinder import Cylinder
@@ -13,10 +15,92 @@ from ursina.models.procedural.cone import Cone
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
 
+VERSION = '0.3.0'
+TARGET_COUNT = 8
+ROUND_SECONDS = 120
+SHOT_COOLDOWN = .30
+
+
+@dataclass
+class GameRound:
+    """与渲染分离的计分规则，传入单调时钟，便于精确验证超时和重开。"""
+    state: str = 'ready'
+    shots: int = 0
+    hits: int = 0
+    streak: int = 0
+    best_streak: int = 0
+    combo_points: int = 0
+    started_at: float = 0
+    finished_elapsed: float = 0
+    last_shot: float = -float('inf')
+
+    def start(self, now):
+        self.state = 'playing'
+        self.shots = self.hits = self.streak = self.best_streak = self.combo_points = 0
+        self.started_at = now
+        self.finished_elapsed = 0
+        self.last_shot = -float('inf')
+
+    def elapsed(self, now):
+        if self.state == 'ready':
+            return 0
+        if self.state != 'playing':
+            return self.finished_elapsed
+        return min(ROUND_SECONDS, max(0, now - self.started_at))
+
+    def tick(self, now):
+        if self.state == 'playing' and now - self.started_at >= ROUND_SECONDS:
+            self.finished_elapsed = ROUND_SECONDS
+            self.state = 'timeout'
+
+    def can_fire(self, now):
+        self.tick(now)
+        return self.state == 'playing' and now - self.last_shot >= SHOT_COOLDOWN - 1e-9
+
+    def fire(self, hit, now):
+        if not self.can_fire(now):
+            return None  # 冷却期点击、结算后点击不计空枪，也不改变分数。
+        self.last_shot = now
+        self.shots += 1
+        if hit:
+            self.hits += 1
+            self.streak += 1
+            self.best_streak = max(self.best_streak, self.streak)
+            combo = min(self.streak - 1, 4) * 25
+            self.combo_points += combo
+            if self.hits == TARGET_COUNT:
+                self.finished_elapsed = self.elapsed(now)
+                self.state = 'cleared'
+            return 100 + combo
+        self.streak = 0
+        return -30
+
+    @property
+    def accuracy(self):
+        return self.hits / self.shots if self.shots else 0
+
+    @property
+    def score(self):
+        return self.hits * 100 + self.combo_points - (self.shots - self.hits) * 30
+
+    @property
+    def bonuses(self):
+        if self.state != 'cleared':
+            return 0, 0, 0
+        # 用时只占总分的小部分；超过 90 秒仍可清场，但没有速度奖励。
+        speed = int(300 * max(0, 1 - self.finished_elapsed / 90))
+        accuracy = int(200 * self.accuracy + .5)
+        perfect = 150 if self.shots == TARGET_COUNT else 0
+        return speed, accuracy, perfect
+
+    @property
+    def total(self):
+        return max(0, self.score + sum(self.bonuses))
+
 
 def main():
     smoke_test = '--smoke-test' in sys.argv
-    app = Ursina(title='MiniFPS | Woodland', borderless=False, fullscreen=False,
+    app = Ursina(title=f'MiniFPS | Woodland v{VERSION}', borderless=False, fullscreen=False,
                  size=(1280, 720), development_mode=False)
     window.color = color.rgb32(162, 189, 196)
     window.exit_button.visible = False
@@ -94,8 +178,9 @@ def main():
     player.input = lambda key: None
     player.cursor.enabled = False
     camera.fov = 76
-    mouse.locked = not smoke_test
-    mouse.visible = smoke_test
+    player.ignore = True
+    mouse.locked = False
+    mouse.visible = True
 
     # 多部件猎枪：木质枪托、金属机匣、长枪管、瞄准镜、扳机护圈及持枪手。
     # 全部模型是摄像机子物体且没有碰撞，不干扰射线检测。
@@ -171,84 +256,228 @@ def main():
 
     slots = [(-6, 2, 3), (-3, 2.6, 8), (2, 2.2, 4), (6, 3, 11),
              (-7, 3.5, 16), (0, 3.2, 18), (7, 2.5, 22), (-3, 2.1, 24)]
+    perches = []
     for x, y, z in slots:
         x += rng.uniform(-.5, .5)
+        perches.append((x, y, z))
         make_bird((x, y, z), rng.uniform(-35, 35))
         # 木桩与横枝让静态鸟有自然的栖息位置。
         part(model='cylinder', position=(x, (y - .43) / 2, z),
              scale=(.18, y - .43, .18), shade=tint(99, 77, 51), solid=True)
         part(position=(x, y - .46, z), scale=(1.3, .11, .16), shade=tint(99, 77, 51))
 
-    # 克制的界面：标题、命中数、细准星与操作提示。
-    Entity(parent=camera.ui, model='quad', position=(-.64, .40),
-           scale=(.46, .14), color=color.rgba32(20, 30, 25, 175))
-    Text('WOODLAND / FIELD 01', position=(-.85, .46), scale=.9,
+    # HUD 保留实时分数、准确率、剩余时间和连击，结算页解释每项得分。
+    hud = Entity(parent=camera.ui)
+    Entity(parent=hud, model='quad', position=(-.55, .38),
+           scale=(.64, .21), color=color.rgba32(20, 30, 25, 195))
+    Text(f'WOODLAND / v{VERSION}', parent=hud, position=(-.85, .46), scale=.85,
          color=tint(220, 210, 171))
-    counter = Text('BIRDS  00 / 08', position=(-.85, .41), scale=1.15)
+    counter = Text(parent=hud, position=(-.85, .42), scale=1)
+    status = Text(parent=hud, position=(-.85, .38), scale=.85)
+    feedback = Text(parent=hud, position=(-.85, .33), scale=.85, color=tint(220, 210, 171))
+    reticle = Entity(parent=hud)
     for pos, size in [((-.009, 0), (.009, .0015)), ((.009, 0), (.009, .0015)),
                       ((0, -.009), (.0015, .009)), ((0, .009), (.0015, .009))]:
-        Entity(parent=camera.ui, model='quad', position=pos, scale=size,
+        Entity(parent=reticle, model='quad', position=pos, scale=size,
                color=color.rgba32(245, 242, 219, 215))
-    Text('WASD  MOVE     MOUSE  AIM     LMB  FIRE     ESC  EXIT',
+    Text('WASD  MOVE     MOUSE  AIM     LMB  FIRE     ESC  EXIT', parent=hud,
          position=(-.85, -.46), scale=.8, color=tint(242, 239, 220))
-    shots = 0
-    hits = 0
-    recoil = 0
-    elapsed = 0
 
-    def shoot():
-        nonlocal shots, hits, recoil
-        shots += 1
-        recoil = .07
+    # 同一个菜单用于开局和结算，按钮之外也支持 Enter / R 键。
+    menu = Entity(parent=camera.ui)
+    Entity(parent=menu, model='quad', scale=(4, 2), z=.2,
+           color=color.rgba32(8, 15, 13, 170))
+    Entity(parent=menu, model='quad', scale=(1.10, .87), z=.1,
+           color=tint(27, 40, 34))
+    menu_title = Text(parent=menu, text='WOODLAND', origin=(0, 0),
+                      position=(0, .33), z=-.1, scale=2, color=tint(233, 219, 169))
+    menu_subtitle = Text(parent=menu, origin=(0, 0), position=(0, .25), z=-.1, scale=1.1)
+    details = Text(parent=menu, position=(-.46, .17), z=-.1, scale=.95, line_height=1.4)
+    primary = Button(parent=menu, text='START / ENTER', position=(-.21, -.31),
+                     z=-.1, scale=(.36, .065), color=tint(88, 114, 78))
+    Button(parent=menu, text='EXIT / ESC', position=(.21, -.31),
+           z=-.1, scale=(.36, .065), color=tint(78, 87, 77), on_click=application.quit)
+    Text(parent=menu, text='8 BIRDS  /  120 SECONDS  /  AIM BEFORE FIRING',
+         origin=(0, 0), position=(0, -.39), z=-.1, scale=.75, color=tint(189, 193, 168))
+    game = GameRound()
+    recoil = 0
+    sway_time = 0
+
+    def refresh_hud(now):
+        remaining = max(0, ROUND_SECONDS - game.elapsed(now))
+        counter.text = f'SCORE {game.score:04d}     BIRDS {game.hits:02d} / 08'
+        status.text = (f'TIME {remaining:05.1f}s    ACC {game.accuracy:.0%}'
+                       f'    STREAK {game.streak}    SHOTS {game.shots}')
+
+    def show_menu():
+        menu.enabled = True
+        hud.enabled = False
+        player.ignore = True
+        reticle.enabled = False
+        gun.enabled = False
+        mouse.locked = False
+        mouse.visible = True
+        if game.state == 'ready':
+            menu_title.text = 'WOODLAND'
+            menu_subtitle.text = 'PRECISION HUNT / 8 TARGETS'
+            details.text = ('Hit a bird: +100 points\n'
+                            'Consecutive hits: +25 / +50 / +75 / +100 max\n'
+                            'Miss: -30 points and reset streak\n\n'
+                            'Clear bonuses: speed up to +300, accuracy up to +200\n'
+                            'Perfect 8 shots / 8 hits: +150 extra\n'
+                            '120 seconds. Timer starts when you press START.\n'
+                            'WASD move, mouse aim, left click fire.')
+            primary.text = 'START / ENTER'
+        else:
+            speed, accuracy, perfect = game.bonuses
+            menu_title.text = 'GAME OVER'
+            outcome = 'ALL BIRDS HIT' if game.state == 'cleared' else 'TIME UP'
+            menu_subtitle.text = f'{outcome}  /  TOTAL {game.total} PTS'
+            misses = game.shots - game.hits
+            details.text = (f'Time {game.finished_elapsed:.1f}s   |   Birds {game.hits}/8'
+                            f'   |   Accuracy {game.accuracy:.1%}\n'
+                            f'Hit points:                      +{game.hits * 100}\n'
+                            f'Combo bonus (best streak {game.best_streak}):    +{game.combo_points}\n'
+                            f'Miss penalty ({misses} misses):              -{misses * 30}\n'
+                            f'Clear speed bonus:               +{speed}\n'
+                            f'Clear accuracy bonus:            +{accuracy}\n'
+                            f'Perfect round bonus:             +{perfect}\n'
+                            'R / ENTER or the button starts a fresh round.')
+            primary.text = 'PLAY AGAIN / R'
+
+    def start_round():
+        nonlocal recoil, sway_time
+        # 只重建鸟；树林、枪、木桩和 UI 复用，避免重开后实体不断累积。
+        for bird in list(birds):
+            destroy(bird)
+        birds.clear()
+        for position in perches:
+            make_bird(position, rng.uniform(-35, 35))
+        player.position = (0, 0, -10)
+        player.rotation = (0, 0, 0)
+        player.camera_pivot.rotation = (0, 0, 0)
+        player.air_time = 0
+        for key in ('w', 'a', 's', 'd'):
+            held_keys[key] = 0
+        recoil = sway_time = 0
+        game.start(perf_counter())
+        menu.enabled = False
+        hud.enabled = True
+        player.ignore = False
+        reticle.enabled = gun.enabled = True
+        mouse.locked = not smoke_test
+        mouse.visible = smoke_test
+        feedback.text = 'HIT +100   /   MISS -30   /   BUILD A STREAK'
+        feedback.color = tint(220, 210, 171)
+        refresh_hud(perf_counter())
+
+    primary.on_click = lambda: start_round() if game.state != 'playing' else None
+
+    def shoot(now=None):
+        nonlocal recoil
+        now = perf_counter() if now is None else now
+        if not game.can_fire(now):
+            if game.state == 'timeout':
+                show_menu()
+            return
         hit = raycast(camera.world_position, camera.forward, distance=65,
                       ignore=[player], traverse_target=scene)
-        if hit.hit and hit.entity in birds:
-            birds.remove(hit.entity)
-            destroy(hit.entity)
-            hits += 1
-        counter.text = f'BIRDS  {hits:02d} / 08    SHOTS  {shots:02d}'
-        if not birds:
-            counter.text = 'FIELD CLEAR / ESC TO EXIT'
+        target = hit.entity if hit.hit and hit.entity in birds else None
+        delta = game.fire(target is not None, now)
+        recoil = .07
+        if target is not None:
+            birds.remove(target)
+            destroy(target)
+            feedback.text = f'HIT +{delta}   /   STREAK {game.streak}'
+            feedback.color = tint(189, 224, 146)
+        else:
+            feedback.text = 'MISS -30   /   STREAK RESET'
+            feedback.color = tint(241, 159, 131)
+        refresh_hud(now)
+        if game.state == 'cleared':
+            show_menu()
 
     def handle_input(key):
         if key == 'escape':
             mouse.locked = False
             mouse.visible = True
             application.quit()
+        elif key in ('enter', 'r') and game.state != 'playing':
+            start_round()
         elif key == 'left mouse down' and mouse.locked:
             shoot()
 
     def update_view():
-        nonlocal recoil, elapsed
-        elapsed += min(time.dt, .05)
+        nonlocal recoil, sway_time
+        if game.state != 'playing':
+            return
+        now = perf_counter()
+        game.tick(now)
+        refresh_hud(now)
+        if game.state == 'timeout':
+            show_menu()
+            return
+        sway_time += min(time.dt, .05)
         recoil = max(0, recoil - time.dt * .4)
         gun.z = .82 - recoil
         gun.rotation_x = -recoil * 65
-        gun.y = -.25 + math.sin(elapsed * 1.8) * .002
+        gun.y = -.25 + math.sin(sway_time * 1.8) * .002
 
     controls = Entity()
     controls.input = handle_input
     controls.update = update_view
+    refresh_hud(perf_counter())
+    show_menu()
 
     if smoke_test:
+        def screenshot(path):
+            from pathlib import Path
+            from panda3d.core import Filename
+            app.graphicsEngine.renderFrame()
+            app.graphicsEngine.renderFrame()
+            app.screenshot(namePrefix=Filename.from_os_specific(str(Path(path).resolve())),
+                           defaultFilename=False)
+
         def verify():
             try:
-                assert len(birds) == 8
+                assert game.state == 'ready' and menu.enabled and player.ignore
+                if '--menu-screenshot' in sys.argv:
+                    screenshot(sys.argv[sys.argv.index('--menu-screenshot') + 1])
+                mouse.hovered_entity = primary
+                app.input('left mouse down')
+                app.input('left mouse up')
+                mouse.hovered_entity = None
+                assert game.state == 'playing' and len(birds) == TARGET_COUNT
+                assert game.shots == 0  # 点击开始按钮不能被当作一次射击。
                 assert raycast(Vec3(0, 2, -10), Vec3(0, 0, -1),
                                distance=10, ignore=[player]).hit
                 if '--screenshot' in sys.argv:
-                    from pathlib import Path
-                    from panda3d.core import Filename
-                    app.graphicsEngine.renderFrame()
-                    app.graphicsEngine.renderFrame()
-                    output = Path(sys.argv[sys.argv.index('--screenshot') + 1]).resolve()
-                    app.screenshot(namePrefix=Filename.from_os_specific(str(output)),
-                                   defaultFilename=False)
-                probe = make_bird(camera.world_position + camera.forward * 3)
-                shoot()
-                assert probe not in birds and len(birds) == 8
-                assert hits == 1 and shots == 1
-                print('SMOKE TEST PASSED', flush=True)
+                    screenshot(sys.argv[sys.argv.index('--screenshot') + 1])
+                now = game.started_at
+                # 把真实鸟移到准星前方，测试实际射线、连击、清场与结果页。
+                for index, bird in enumerate(list(birds)):
+                    bird.world_position = camera.world_position + camera.forward * 3
+                    shoot(now + index)
+                    assert bird not in birds
+                assert game.state == 'cleared' and game.hits == 8 and not birds
+                assert menu.enabled and player.ignore and not mouse.locked
+                score = game.total
+                shoot(now + 20)
+                assert game.total == score and game.shots == 8
+                if '--result-screenshot' in sys.argv:
+                    screenshot(sys.argv[sys.argv.index('--result-screenshot') + 1])
+                # 连续重开不能残留旧目标、旧分数或冻结的计时器。
+                for _ in range(3):
+                    handle_input('r')
+                    assert len(birds) == 8 and game.score == 0 and game.shots == 0
+                    assert game.state == 'playing' and not menu.enabled and not player.ignore
+                    # 再次结束本局，才能从结算页使用 R 开启下一局。
+                    game.tick(game.started_at + ROUND_SECONDS)
+                    show_menu()
+                game.tick(game.started_at + ROUND_SECONDS)
+                show_menu()
+                assert game.state == 'timeout' and menu.enabled and game.total == 0
+                print('SMOKE TEST PASSED: scoring, clear, restart, timeout', flush=True)
             except Exception:
                 import traceback
                 traceback.print_exc()
