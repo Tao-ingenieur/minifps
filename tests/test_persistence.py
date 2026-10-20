@@ -199,7 +199,7 @@ class StorageTests(unittest.TestCase):
     def test_failed_replace_keeps_previous_save_and_cleans_temp_file(self):
         SaveStore.write(self.path, fixture())
         previous = self.path.read_bytes()
-        with patch('minifps.os.replace', side_effect=OSError('disk full')):
+        with patch('woodland.storage.os.replace', side_effect=OSError('disk full')):
             with self.assertRaises(OSError):
                 SaveStore.write(self.path, fixture())
         self.assertEqual(self.path.read_bytes(), previous)
