@@ -1,14 +1,24 @@
-# MiniFPS Woodland v0.4.0
+# MiniFPS Woodland v0.5.0
 
 一个极简 Windows 第一人称林间猎鸟靶场，使用 Python + Ursina。可辨认的多部件 3D 猎枪包含木质枪托、金属枪管、瞄准镜和持枪手；鸟有头、喙、眼睛、双翼、脚与尾羽，栖息在林间木桩上。每局有 8 只静态鸟，朝向随机；场景与栖息位置固定，确保跨次启动读档时布局一致。
 
-WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点击 START 或按 Enter 开始一局 120 秒挑战。击中全部 8 只鸟或用时结束后显示 Game Over、逐项得分和总分，可按 R / Enter 或点击 PLAY AGAIN 重新开始。ESC 保存后释放鼠标并退出。
+WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点击 START 或按 Enter 开始一局 120 秒挑战。击中全部 8 只鸟或用时结束后显示 Game Over、逐项得分和总分，可按 R / Enter 或点击 PLAY AGAIN 重新开始。ESC 暂停或继续并释放鼠标，不再直接退出；退出请使用菜单 SAVE & EXIT。
 
-当前版本 **v0.4.0**。每个版本的具体改动见 [更新日志](CHANGELOG.md)，可下载历史源码或查看 [GitHub Releases](https://github.com/Tao-ingenieur/minifps/releases)。前两版已根据原始提交补记历史记录。
+当前版本 **v0.5.0**。每个版本的具体改动见 [更新日志](CHANGELOG.md)，可下载历史源码或查看 [GitHub Releases](https://github.com/Tao-ingenieur/minifps/releases)。前两版已根据原始提交补记历史记录。
 
 ![游戏实机画面](docs/preview.png)
 ![暂停与存档菜单](docs/pause.png)
+![About 与版本信息](docs/about.png)
 ![清场结算](docs/results.png)
+
+## 全屏、鼠标与 About
+
+- **F11 / Alt+Enter** 或菜单中的 FULLSCREEN / WINDOWED 切换全屏与普通窗口。切换时暂停，按 ESC / Enter 继续；返回窗口会恢复原来的尺寸和位置。
+- **窗口模式默认自由鼠标**，可直接移出游戏去操作其他程序。按住右键时临时捕获鼠标、控制视角并放大瞄准；松开右键立即释放。左键沿屏幕中心准星射击。鼠标离开窗口或窗口失焦时自动暂停。
+- **全屏模式**在游玩时自动捕获鼠标，直接移动鼠标控制视角；ESC / P 暂停后立即释放鼠标，Alt+Tab 失焦也会自动暂停。
+- **ESC 不退出游戏**：游玩时暂停，暂停时继续；About/历史页返回菜单，确认页取消；首页或结算页也不会退出。退出请点击 SAVE & EXIT 并确认，或关闭窗口。
+- **ABOUT / F1** 显示当前版本号 **v0.5.0**、操作说明、技术栈及项目地址。标题栏和游戏 HUD 同样显示版本号。
+- 存档格式保持 1，之前 v0.4.0 的进度与玩家纪录可以继续读取。
 
 ## 存盘、继续与玩家成绩
 
@@ -16,15 +26,15 @@ WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点
 
 | 操作 | 按键 / 菜单 |
 | --- | --- |
-| 暂停 / 继续 | P；暂停菜单也可按 Enter 继续 |
+| 暂停 / 继续 | ESC / P；暂停菜单也可按 Enter 继续 |
 | 快速存盘 | F5 / QUICK SAVE，保存后停在暂停页 |
 | 快速读档 | F9 / QUICK LOAD；有当前进度时先确认 |
 | 导出便携存档 | F6 / EXPORT JSON，选择保存位置 |
 | 导入便携存档 | F7 / IMPORT JSON，选择之前导出的 JSON |
 | 重开本局 | R / NEW ROUND；局中先确认，不清除最高分 |
 | 看历史与成就 | 暂停或结算菜单的 HISTORY |
-| 放大瞄准 | 按住鼠标右键，松开恢复；放大时降低鼠标灵敏度 |
-| 保存并退出 | ESC / SAVE & EXIT；关闭窗口也触发保存 |
+| 控制视角 / 放大瞄准 | 窗口模式按住右键；全屏直接移动鼠标，右键放大 |
+| 保存并退出 | 菜单 SAVE & EXIT 并确认；关闭窗口也触发保存 |
 
 存档包含剩余目标、玩家位置与视角、当前分数所需的命中/发数与连击、已用时间和射击冷却。读档后停在暂停页，继续前不消耗时间。暂停、离线及文件选择器打开期间都不计时；切出窗口也会自动暂停。
 
@@ -87,7 +97,7 @@ py -3.12 -m venv ..\minifps-local\.venv
 & ..\minifps-local\.venv\Scripts\python.exe src\minifps.py
 ```
 
-在规则菜单点击 START 或按 Enter 后，鼠标锁定到窗口，W/S 前后移动，A/D 左右平移，鼠标转动视角，单击左键射击。准星下的第一个碰撞物决定命中；猎枪模型不参与碰撞。射中小鸟后小鸟消失，清场或超时后显示结算页，可按 R / Enter 或点击按钮开启新一局。P 暂停，ESC 保存并退出、释放鼠标。
+在规则菜单点击 START 或按 Enter 后，窗口模式默认自由鼠标，按住右键转动视角；全屏模式捕获鼠标。W/S 前后移动，A/D 左右平移，鼠标转动视角，单击左键射击。准星下的第一个碰撞物决定命中；猎枪模型不参与碰撞。射中小鸟后小鸟消失，清场或超时后显示结算页，可按 R / Enter 或点击按钮开启新一局。ESC / P 暂停或继续；窗口模式松开右键释放鼠标。F11 切换全屏，F1 查看 About。
 
 ## 完整单文件代码
 
@@ -118,7 +128,7 @@ from ursina.models.procedural.cone import Cone
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
 
-VERSION = '0.4.0'
+VERSION = '0.5.0'
 SAVE_FORMAT = 1
 RULESET = 'woodland-scoring-1'
 SLOTS = [(-6, 2, 3), (-3, 2.6, 8), (2, 2.2, 4), (6, 3, 11),
@@ -534,6 +544,9 @@ def main():
     smoke_test = '--smoke-test' in sys.argv
     app = Ursina(title=f'MiniFPS | Woodland v{VERSION}', borderless=False, fullscreen=False,
                  size=(1280, 720), development_mode=False)
+    # 统一交给游戏处理 F11，避免引擎调试快捷键和自定义逻辑各切换一次。
+    window.input_entity.enabled = False
+    window.fullscreen = False
     window.color = color.rgb32(162, 189, 196)
     window.exit_button.visible = False
     window.fps_counter.enabled = False
@@ -726,7 +739,7 @@ def main():
                       ((0, -.009), (.0015, .009)), ((0, .009), (.0015, .009))]:
         Entity(parent=reticle, model='quad', position=pos, scale=size,
                color=color.rgba32(245, 242, 219, 215))
-    Text('WASD MOVE  /  LMB FIRE  /  RMB ZOOM  /  P PAUSE  /  F5 SAVE  /  F9 LOAD',
+    Text('WASD MOVE / HOLD RMB LOOK / LMB FIRE / ESC PAUSE / F11 FULLSCREEN',
          parent=hud, position=(-.85, -.46), scale=.72, color=tint(242, 239, 220))
     toast = Text(parent=camera.ui, origin=(0, 0), position=(.3, .45), z=-.4,
                  scale=.8, color=tint(242, 225, 170), enabled=False)
@@ -744,17 +757,19 @@ def main():
     def button(text, x, y, shade=None):
         return Button(parent=menu, text=text, position=(x, y), z=-.1,
                       scale=(.35, .055), color=shade or tint(66, 83, 69))
-    primary = button('START / ENTER', -.40, -.20, tint(88, 114, 78))
-    restart_button = button('NEW ROUND / R', 0, -.20)
-    history_button = button('HISTORY', .40, -.20)
-    save_button = button('QUICK SAVE / F5', -.40, -.275)
-    load_button = button('QUICK LOAD / F9', 0, -.275)
-    export_button = button('EXPORT JSON / F6', .40, -.275)
-    import_button = button('IMPORT JSON / F7', -.40, -.35)
-    exit_button = button('SAVE & EXIT / ESC', 0, -.35)
-    back_button = button('BACK / P', .40, -.35)
+    primary = button('START / ENTER', -.40, -.125, tint(88, 114, 78))
+    restart_button = button('NEW ROUND / R', 0, -.125)
+    history_button = button('HISTORY', .40, -.125)
+    save_button = button('QUICK SAVE / F5', -.40, -.20)
+    load_button = button('QUICK LOAD / F9', 0, -.20)
+    export_button = button('EXPORT JSON / F6', .40, -.20)
+    import_button = button('IMPORT JSON / F7', -.40, -.275)
+    display_button = button('FULLSCREEN / F11', 0, -.275)
+    about_button = button('ABOUT / F1', .40, -.275)
+    exit_button = button('SAVE & EXIT', 0, -.35)
+    back_button = button('BACK / ESC', .40, -.35)
     buttons = [primary, restart_button, history_button, save_button, load_button,
-               export_button, import_button, exit_button, back_button]
+               export_button, import_button, display_button, about_button, exit_button, back_button]
     game = GameRound()
     recoil = sway_time = 0
     notice = initial_notice
@@ -763,6 +778,8 @@ def main():
     menu_mode = 'normal'
     pending_action = None
     unlocked = []
+    looking = False
+    layout_aspect = None
 
     def notify(text):
         nonlocal notice, notice_until
@@ -770,6 +787,46 @@ def main():
         menu_notice.text = notice
         toast.text = notice
         notice_until = perf_counter() + 5
+
+    def sync_pointer():
+        # 窗口模式只在按住右键时临时捕获；菜单、失焦与离窗都立即释放。
+        capture = game.state == 'playing' and not menu.enabled and (window.fullscreen or looking)
+        desired = capture and not smoke_test
+        if mouse.locked != desired:
+            mouse.locked = desired
+        if mouse.visible != (not desired):
+            mouse.visible = not desired
+        sensitivity = 20 if looking else 35
+        player.mouse_sensitivity = Vec3(sensitivity, sensitivity, 0) if capture else Vec3(0, 0, 0)
+        camera.fov = 50 if looking and game.state == 'playing' else 76
+
+    def layout_ui():
+        nonlocal layout_aspect
+        aspect = window.aspect_ratio
+        if layout_aspect == aspect:
+            return
+        layout_aspect = aspect
+        # 按屏幕左边缘定位，16:10 全屏和较窄窗口也不会裁掉分数。
+        scale = min(1, aspect / 1.6)
+        hud.scale = scale
+        hud.x = -aspect / 2 + .04 + .85 * scale
+        hud.y = .46 * (1 - scale)
+        menu.scale = min(1, max(.3, (aspect - .08) / 1.36))
+
+    def toggle_fullscreen():
+        if not window.main_monitor:
+            notify('Cannot detect monitor. Windowed mode remains available.')
+            return
+        was_playing = game.state == 'playing'
+        if was_playing:
+            pause_round()
+        window.fullscreen = not window.fullscreen
+        window.borderless = window.fullscreen
+        # Ursina 恢复切换前的窗口尺寸和位置；UI 根据实际宽高比自动重排。
+        sync_pointer()
+        show_menu()
+        notify(('Fullscreen' if window.fullscreen else 'Windowed') +
+               ' mode. ESC / ENTER resumes; windowed RMB releases on button-up.')
 
     def refresh_hud(now):
         remaining = max(0, ROUND_SECONDS - game.elapsed(now))
@@ -811,8 +868,10 @@ def main():
                 show_menu()
 
     def show_menu(mode='normal'):
-        nonlocal menu_mode
+        nonlocal menu_mode, looking
         menu_mode = mode
+        layout_ui()
+        looking = False
         menu.enabled = True
         hud.enabled = False
         player.ignore = True
@@ -829,7 +888,19 @@ def main():
         primary.on_click = primary_action
         back_button.on_click = lambda: show_menu()
         menu_notice.text = notice
-        if mode == 'history':
+        display_button.text = 'WINDOWED / F11' if window.fullscreen else 'FULLSCREEN / F11'
+        if mode == 'about':
+            primary.text = 'BACK TO MENU'
+            menu_title.text = 'ABOUT MINIFPS'
+            menu_subtitle.text = f'WOODLAND / VERSION {VERSION}'
+            details.text = ('A single-player woodland precision shooting game.\n'
+                            'Built with Python + Ursina + Panda3D.\n'
+                            f'Save format {SAVE_FORMAT}; local saves remain compatible with v0.4.0.\n\n'
+                            'F11 / Alt+Enter: fullscreen or windowed.\n'
+                            'Windowed: hold RMB to look; release to free the cursor.\n'
+                            'ESC / P: pause or resume. F5 save; F9 load.\n'
+                            'Source: github.com/Tao-ingenieur/minifps')
+        elif mode == 'history':
             primary.text = 'BACK TO MENU'
             menu_title.text = 'PLAYER RECORDS'
             menu_subtitle.text = f'BEST {profile["best_score"]}  /  LAST {profile["last_score"]}  /  ROUNDS {profile["games_played"]}'
@@ -854,19 +925,19 @@ def main():
                             'Build a streak: +25 / +50 / +75 / +100 extra.\n'
                             'Clear bonuses: speed +300 max, accuracy +200 max.\n'
                             '8 shots / 8 hits: +150 perfect bonus.\n\n'
-                            'P pauses; F5 saves; F9 loads. RMB zooms to aim.\n'
-                            'Progress autosaves after shots and every 10 seconds.\n'
+                            'ESC pauses; F11 fullscreen; F1 About / version.\n'
+                            'Windowed: hold RMB to look; release to free the cursor.\n'
                             'Export / Import JSON transfers progress to another PC.')
         elif game.state == 'paused':
             menu_title.text = 'PAUSED'
             menu_subtitle.text = f'CURRENT {game.score}  /  BEST {profile["best_score"]}  /  LAST {profile["last_score"]}'
             details.text = (f'Birds {game.hits}/8    Shots {game.shots}    Accuracy {game.accuracy:.1%}\n'
                             f'Time left {ROUND_SECONDS - game.finished_elapsed:.1f}s    Streak {game.streak}\n\n'
-                            'Timer is stopped. Resume with P or ENTER.\n'
+                            'Timer stopped. ESC / P / ENTER resumes.\n'
                             'F5: quick save     F9: quick load\n'
                             'F6: export a JSON file     F7: import a JSON file\n'
                             'NEW ROUND asks before discarding this attempt.\n'
-                            'Best score and completed records survive restarts.')
+                            'F11 fullscreen / windowed; F1 About and version.')
         else:
             speed, accuracy, perfect = game.bonuses
             menu_title.text = 'GAME OVER'
@@ -894,8 +965,7 @@ def main():
         hud.enabled = True
         player.ignore = False
         reticle.enabled = gun.enabled = True
-        mouse.locked = not smoke_test
-        mouse.visible = smoke_test
+        sync_pointer()
         next_autosave = perf_counter() + 10
         refresh_hud(perf_counter())
 
@@ -978,12 +1048,12 @@ def main():
         menu_mode = 'confirm'
         menu_title.text = title
         menu_subtitle.text = 'YOUR BEST SCORE AND RECORDS WILL BE KEPT'
-        details.text = text + '\n\nPress ENTER to confirm, P to cancel.'
+        details.text = text + '\n\nPress ENTER to confirm, ESC to cancel.'
         for item in buttons:
             item.enabled = item in (primary, back_button)
         primary.text = 'CONFIRM / ENTER'
         primary.on_click = accept_confirmation
-        back_button.text = 'CANCEL / P'
+        back_button.text = 'CANCEL / ESC'
         back_button.on_click = cancel_confirmation
 
     def accept_confirmation():
@@ -992,12 +1062,12 @@ def main():
         menu_mode = 'normal'
         if action:
             action()
-        back_button.text = 'BACK / P'
+        back_button.text = 'BACK / ESC'
 
     def cancel_confirmation():
         nonlocal pending_action
         pending_action = None
-        back_button.text = 'BACK / P'
+        back_button.text = 'BACK / ESC'
         show_menu()
 
     def request_restart():
@@ -1078,7 +1148,10 @@ def main():
     load_button.on_click = lambda: load_file(store.quick)
     export_button.on_click = export_file
     import_button.on_click = import_file
-    exit_button.on_click = exit_game
+    exit_button.on_click = lambda: confirm('EXIT GAME?',
+        'Save progress and close MiniFPS? You can continue next time.', exit_game)
+    display_button.on_click = toggle_fullscreen
+    about_button.on_click = lambda: (pause_round(), show_menu('about'))
 
     def shoot(now=None):
         nonlocal recoil
@@ -1107,21 +1180,28 @@ def main():
             checkpoint(now=now)
 
     def handle_input(key):
+        nonlocal looking
         if menu_mode == 'confirm':
             if key == 'enter':
                 accept_confirmation()
             elif key in ('p', 'escape'):
                 cancel_confirmation()
             return
-        if key == 'escape':
-            exit_game()
-        elif key == 'p':
-            if menu_mode == 'history':
+        if key in ('f11', 'alt-enter') or (key == 'enter' and
+                (held_keys['alt'] or held_keys['left alt'] or held_keys['right alt'])):
+            toggle_fullscreen()
+        elif key == 'f1':
+            pause_round()
+            show_menu('about')
+        elif key in ('escape', 'p'):
+            if menu_mode in ('history', 'about'):
                 show_menu()
             elif game.state == 'playing':
                 pause_round()
             elif game.state == 'paused':
                 resume_round()
+            else:
+                show_menu()  # ESC 在首页或结算页也不退出。
         elif key == 'r':
             request_restart()
         elif key == 'enter' and game.state != 'playing':
@@ -1134,17 +1214,18 @@ def main():
             export_file()
         elif key == 'f7':
             import_file()
-        elif key == 'left mouse down' and mouse.locked:
+        elif key == 'left mouse down' and game.state == 'playing' and not mouse.is_outside:
             shoot()
-        elif key == 'right mouse down' and game.state == 'playing':
-            camera.fov = 50
-            player.mouse_sensitivity = Vec3(20, 20, 0)
+        elif key == 'right mouse down' and game.state == 'playing' and not mouse.is_outside:
+            looking = True
+            sync_pointer()
         elif key == 'right mouse up':
-            camera.fov = 76
-            player.mouse_sensitivity = Vec3(35, 35, 0)
+            looking = False
+            sync_pointer()
 
     def update_view():
         nonlocal recoil, sway_time
+        layout_ui()
         toast.enabled = game.state == 'playing' and perf_counter() < notice_until
         if game.state != 'playing':
             return
@@ -1154,10 +1235,12 @@ def main():
         if game.state == 'timeout':
             finish_round()
             return
-        if not smoke_test and not app.win.getProperties().getForeground():
+        if not smoke_test and (not app.win.getProperties().getForeground() or
+                               (not window.fullscreen and not looking and mouse.is_outside)):
             pause_round()
-            notify('Window inactive. Game paused; timer stopped.')
+            notify('Cursor left the window or focus lost. Paused; cursor released.')
             return
+        sync_pointer()
         if now >= next_autosave:
             checkpoint()
         sway_time += min(time.dt, .05)
@@ -1183,10 +1266,13 @@ def main():
                            defaultFilename=False)
 
         def verify():
-            nonlocal profile, game, saved_session
+            nonlocal profile, game, saved_session, looking
             try:
                 # 自检目录独立，绝不读取或改写玩家的真实存档。
                 assert game.state == 'ready' and menu.enabled and player.ignore
+                assert not window.fullscreen and not mouse.locked
+                handle_input('escape')
+                assert game.state == 'ready' and menu.enabled
                 if '--menu-screenshot' in sys.argv:
                     screenshot(sys.argv[sys.argv.index('--menu-screenshot') + 1])
                 mouse.hovered_entity = primary
@@ -1195,9 +1281,52 @@ def main():
                 mouse.hovered_entity = None
                 assert game.state == 'playing' and len(birds) == 8
                 assert game.shots == 0
+                assert not mouse.locked and mouse.visible
+                handle_input('escape')
+                assert game.state == 'paused' and menu.enabled and not mouse.locked
+                frozen = game.elapsed(perf_counter() + 60)
+                assert frozen == game.finished_elapsed
+                handle_input('escape')
+                assert game.state == 'playing' and not menu.enabled and not mouse.locked
+                handle_input('f1')
+                assert menu_mode == 'about' and VERSION in menu_subtitle.text
+                assert not mouse.locked and player.ignore
+                if '--about-screenshot' in sys.argv:
+                    screenshot(sys.argv[sys.argv.index('--about-screenshot') + 1])
+                handle_input('escape')
+                assert menu_mode == 'normal' and game.state == 'paused'
+                handle_input('escape')
+                assert game.state == 'playing'
+                if '--display-smoke-test' in sys.argv and window.main_monitor:
+                    old_size = tuple(window.size)
+                    app.input('f11')
+                    assert window.fullscreen and window.borderless and game.state == 'paused'
+                    app.graphicsEngine.renderFrame()
+                    app.graphicsEngine.renderFrame()
+                    held_keys['alt'] = 1
+                    app.input('enter')
+                    held_keys['alt'] = 0
+                    assert not window.fullscreen and not window.borderless
+                    app.graphicsEngine.renderFrame()
+                    app.graphicsEngine.renderFrame()
+                    assert tuple(window.size) == old_size
+                    handle_input('escape')
+                assert game.state == 'playing' and not mouse.locked
+                looking = True
+                sync_pointer()
+                assert player.mouse_sensitivity.x == 20
+                looking = False
+                sync_pointer()
+                assert player.mouse_sensitivity.x == 0 and mouse.visible
+                exit_button.on_click()
+                assert menu_mode == 'confirm' and game.state == 'paused'
+                handle_input('escape')
+                assert menu_mode == 'normal' and game.state == 'paused'
+                handle_input('escape')
+                assert game.state == 'playing'
                 bird = birds[0]
                 bird.world_position = camera.world_position + camera.forward * 3
-                shoot(game.started_at)
+                shoot(max(perf_counter(), game.last_shot + SHOT_COOLDOWN))
                 assert game.hits == 1 and len(birds) == 7
                 player.position = (1, 0, -8)
                 player.rotation_y = 12
@@ -1259,7 +1388,7 @@ def main():
                 persisted, error = store.load_with_backup(store.autosave)
                 assert persisted['profile']['best_score'] == profile['best_score'] and not error
                 assert persisted['profile']['last_score'] == 0 and persisted['session'] is None
-                print('SMOKE TEST PASSED: save, load, import, best score, restart, results', flush=True)
+                print('SMOKE TEST PASSED: ESC pause, About, cursor policy, display, saves and results', flush=True)
             except Exception:
                 import traceback
                 traceback.print_exc()
