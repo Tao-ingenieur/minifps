@@ -6,6 +6,8 @@ WASD 移动，鼠标瞄准，左键射击。启动后先显示规则菜单，点
 
 当前版本 **v0.6.0**。每个版本的具体改动见 [更新日志](CHANGELOG.md)，可下载历史源码或查看 [GitHub Releases](https://github.com/Tao-ingenieur/minifps/releases)。前两版已根据原始提交补记历史记录。
 
+可复用的完整产品开发指令见 [开发 Prompt](DEVELOPMENT_PROMPT.md)，可交给其他大模型用于重建或继续开发本产品。
+
 ![游戏实机画面](docs/preview.png)
 ![暂停与存档菜单](docs/pause.png)
 ![About 与版本信息](docs/about.png)
